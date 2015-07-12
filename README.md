@@ -1,13 +1,4 @@
 # hello_world
 this is a test
-this ist 
-ljlkj
-asfjdajkasdfasdfwersfnsadfn
-asnfdaksldjnf
-as
-d
-asd
-fas
-dfasd
-fa
-sdf
+
+this is how it's suppose to look
