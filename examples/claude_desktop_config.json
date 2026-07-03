@@ -1,0 +1,9 @@
+{
+  "_comment": "Register the AdCP Agent Suite as an MCP server. Run `npm run build` first, then point `args` at the absolute path to dist/mcp/server.js. Restart your MCP client to pick it up.",
+  "mcpServers": {
+    "adcp": {
+      "command": "node",
+      "args": ["/absolute/path/to/adcp-agent-suite/dist/mcp/server.js"]
+    }
+  }
+}

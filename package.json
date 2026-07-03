@@ -1,0 +1,46 @@
+{
+  "name": "adcp-agent-suite",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A fully functional AdCP (Ad Context Protocol) agent suite that orchestrates buying, selling, and creative management across the agentic advertising ecosystem.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "adcp": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "demo": "tsx src/cli/index.ts demo",
+    "cli": "tsx src/cli/index.ts",
+    "serve": "tsx src/cli/index.ts serve",
+    "mcp": "tsx src/mcp/server.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [
+    "adcp",
+    "advertising",
+    "agent",
+    "mcp",
+    "a2a",
+    "media-buy",
+    "creative",
+    "signals"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "express": "^4.21.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  }
+}
