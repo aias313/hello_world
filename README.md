@@ -26,14 +26,15 @@ npm test              # 47 tests across every agent + transport
 `npm run demo` runs a deterministic, reproducible campaign: it discovers
 StreamHaus inventory from a natural-language brief, activates an outdoor-audience
 signal, builds creative for four formats, clears governance (with human
-escalation for the $50K budget), executes a media buy, then reports delivery at
-mid-flight and completion.
+escalation for the $50K budget), establishes the commercial account, executes a
+media buy, reports delivery at mid-flight and completion, then logs downstream
+conversions for attribution and submits performance feedback.
 
 ## What's in the suite
 
 | Agent | Role | AdCP tasks implemented |
 |-------|------|------------------------|
-| **Sales agent** (`src/agents/sales-agent.ts`) | Seller / publisher side | `get_products`, `list_creative_formats`, `sync_creatives`, `list_creatives`, `create_media_buy`, `update_media_buy`, `get_media_buys`, `get_media_buy_delivery`, `provide_performance_feedback` |
+| **Sales agent** (`src/agents/sales-agent.ts`) | Seller / publisher side | `get_products`, `list_creative_formats`, `sync_creatives`, `list_creatives`, `create_media_buy`, `update_media_buy`, `get_media_buys`, `get_media_buy_delivery`, `provide_performance_feedback`, `sync_accounts`, `list_accounts`, `sync_catalogs`, `sync_audiences`, `sync_event_sources`, `log_event` |
 | **Creative agent** (`src/agents/creative-agent.ts`) | Creative generation & management | `build_creative` (multi-format, with conversational refinement), `list_creative_formats`, `list_creatives` |
 | **Signals agent** (`src/agents/signals-agent.ts`) | Third-party targeting data | `get_signals`, `activate_signal` |
 | **Governance agent** (`src/buyer/governance.ts`) | Trust & human-in-the-loop | `check_governance` (policy + escalation), `get_plan_audit_logs` |
@@ -84,9 +85,9 @@ Then register the built server with any MCP client. Example
 }
 ```
 
-The client will see 14 tools (`get_products`, `create_media_buy`,
-`build_creative`, `get_signals`, …) and can run a complete campaign by chaining
-them.
+The client will see 20 tools (`get_products`, `create_media_buy`,
+`build_creative`, `get_signals`, `sync_accounts`, `log_event`, …) and can run a
+complete campaign by chaining them.
 
 ## CLI
 
@@ -141,14 +142,15 @@ src/
 ## Testing
 
 ```bash
-npm test          # vitest, 47 tests
+npm test          # vitest, 54 tests
 npm run typecheck # tsc --noEmit
 ```
 
 Coverage spans product discovery & ranking, budget allocation, media-buy
 creation/validation/idempotency, the delivery engine (monotonic accrual,
 budget-capped spend), creative generation and format-spec review,
-signal ranking/activation, governance approve/escalate/deny paths, the full
+signal ranking/activation, account provisioning, catalog/audience sync,
+conversion event ingestion, governance approve/escalate/deny paths, the full
 orchestrated lifecycle, and an end-to-end campaign run over the HTTP transport.
 
 ## About AdCP

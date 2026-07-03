@@ -335,3 +335,107 @@ export const ActivateSignalRequest = z.object({
   ),
 });
 export type ActivateSignalRequest = z.infer<typeof ActivateSignalRequest>;
+
+/* ------------------------------------------------------------------ */
+/* Commerce: accounts                                                  */
+/* ------------------------------------------------------------------ */
+
+export const AccountStatus = z.enum(["active", "pending_review", "rejected"]);
+export type AccountStatus = z.infer<typeof AccountStatus>;
+
+export const AccountRecord = Account.extend({
+  account_id: z.string(),
+  status: AccountStatus,
+  created_at: z.string(),
+});
+export type AccountRecord = z.infer<typeof AccountRecord>;
+
+export const SyncAccountsRequest = z.object({
+  idempotency_key: z.string().optional(),
+  accounts: z
+    .array(
+      z.object({
+        brand: Brand,
+        operator: z.string(),
+        billing: z.enum(["operator", "brand"]).default("operator"),
+      }),
+    )
+    .min(1),
+});
+export type SyncAccountsRequest = z.infer<typeof SyncAccountsRequest>;
+
+/* ------------------------------------------------------------------ */
+/* Catalogs                                                            */
+/* ------------------------------------------------------------------ */
+
+export const CatalogInput = z.object({
+  catalog_id: z.string(),
+  name: z.string(),
+  type: z.enum(["product", "store", "inventory"]).default("product"),
+  url: z.string(),
+  feed_format: z.enum(["shopify", "google", "csv", "json"]).default("json"),
+  update_frequency: z.enum(["hourly", "daily", "weekly"]).default("daily"),
+});
+export type CatalogInput = z.infer<typeof CatalogInput>;
+
+export const SyncCatalogsRequest = z.object({
+  idempotency_key: z.string().optional(),
+  account: Account.optional(),
+  catalogs: z.array(CatalogInput).min(1),
+});
+export type SyncCatalogsRequest = z.infer<typeof SyncCatalogsRequest>;
+
+/* ------------------------------------------------------------------ */
+/* Audiences                                                           */
+/* ------------------------------------------------------------------ */
+
+export const AudienceInput = z.object({
+  audience_id: z.string(),
+  name: z.string(),
+  audience_type: z.enum(["targeting", "suppression"]).default("targeting"),
+  /** Optional count of hashed members supplied. */
+  member_count: z.number().int().nonnegative().optional(),
+});
+export type AudienceInput = z.infer<typeof AudienceInput>;
+
+export const SyncAudiencesRequest = z.object({
+  idempotency_key: z.string().optional(),
+  account: Account.optional(),
+  audiences: z.array(AudienceInput).min(1),
+});
+export type SyncAudiencesRequest = z.infer<typeof SyncAudiencesRequest>;
+
+/* ------------------------------------------------------------------ */
+/* Conversion tracking                                                 */
+/* ------------------------------------------------------------------ */
+
+export const SyncEventSourcesRequest = z.object({
+  idempotency_key: z.string().optional(),
+  account: Account.optional(),
+  event_sources: z
+    .array(
+      z.object({
+        event_source_id: z.string(),
+        type: z.enum(["pixel", "server", "app_sdk", "offline"]).default("pixel"),
+        name: z.string().optional(),
+      }),
+    )
+    .min(1),
+});
+export type SyncEventSourcesRequest = z.infer<typeof SyncEventSourcesRequest>;
+
+export const MarketingEvent = z.object({
+  event_id: z.string(),
+  event_type: z.enum(["purchase", "lead", "sign_up", "add_to_cart", "page_view", "custom"]),
+  event_time: z.string(),
+  action_source: z.enum(["website", "app", "physical_store", "offline"]).default("website"),
+  custom_data: z.record(z.string(), z.unknown()).optional(),
+});
+export type MarketingEvent = z.infer<typeof MarketingEvent>;
+
+export const LogEventRequest = z.object({
+  idempotency_key: z.string().optional(),
+  event_source_id: z.string(),
+  events: z.array(MarketingEvent).min(1),
+});
+export type LogEventRequest = z.infer<typeof LogEventRequest>;

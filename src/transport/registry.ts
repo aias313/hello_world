@@ -18,6 +18,11 @@ import {
   BuildCreativeRequest,
   GetSignalsRequest,
   ActivateSignalRequest,
+  SyncAccountsRequest,
+  SyncCatalogsRequest,
+  SyncAudiencesRequest,
+  SyncEventSourcesRequest,
+  LogEventRequest,
 } from "../core/schemas.js";
 
 export interface TaskDef {
@@ -105,6 +110,42 @@ export function buildRegistry(node: AgentNode): TaskDef[] {
           sales.providePerformanceFeedback(
             i as { media_buy_id: string; performance_index: number },
           ),
+      },
+      {
+        name: "sync_accounts",
+        description: "Declare brand/operator pairs and billing; seller provisions accounts.",
+        input: SyncAccountsRequest,
+        handler: (i) => sales.syncAccounts(i),
+      },
+      {
+        name: "list_accounts",
+        description: "List active commercial relationships (accounts).",
+        input: z.object({ status: z.string().optional() }),
+        handler: (i) => sales.listAccounts(i as { status?: string }),
+      },
+      {
+        name: "sync_catalogs",
+        description: "Sync product/store/inventory catalog feeds to an account.",
+        input: SyncCatalogsRequest,
+        handler: (i) => sales.syncCatalogs(i),
+      },
+      {
+        name: "sync_audiences",
+        description: "Upload and manage first-party CRM audiences.",
+        input: SyncAudiencesRequest,
+        handler: (i) => sales.syncAudiences(i),
+      },
+      {
+        name: "sync_event_sources",
+        description: "Configure conversion event sources on an account.",
+        input: SyncEventSourcesRequest,
+        handler: (i) => sales.syncEventSources(i),
+      },
+      {
+        name: "log_event",
+        description: "Send marketing events (purchases, leads, …) for attribution.",
+        input: LogEventRequest,
+        handler: (i) => sales.logEvent(i),
       },
     );
   }

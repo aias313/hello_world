@@ -15,6 +15,7 @@ import type {
   Product,
   Creative,
   Signal,
+  AccountRecord,
 } from "../core/schemas.js";
 
 export interface DeliveryReport {
@@ -50,6 +51,12 @@ export interface SalesClient {
     performance_index: number;
     measurement_period?: { start: string; end: string };
   }): Promise<{ accepted: true; media_buy_id: string }>;
+  syncAccounts(req: unknown): Promise<{ accounts: AccountRecord[] }>;
+  listAccounts(req?: { status?: string }): Promise<{ accounts: AccountRecord[] }>;
+  syncCatalogs(req: unknown): Promise<{ catalogs: unknown[] }>;
+  syncAudiences(req: unknown): Promise<{ audiences: unknown[] }>;
+  syncEventSources(req: unknown): Promise<{ event_sources: unknown[] }>;
+  logEvent(req: unknown): Promise<{ accepted: number; total_events: number }>;
 }
 
 export interface CreativeClient {
@@ -78,6 +85,12 @@ export function inProcSales(agent: SalesAgent): SalesClient {
     getMediaBuys: async (r) => agent.getMediaBuys(r),
     getMediaBuyDelivery: async (r) => agent.getMediaBuyDelivery(r),
     providePerformanceFeedback: async (r) => agent.providePerformanceFeedback(r),
+    syncAccounts: async (r) => agent.syncAccounts(r),
+    listAccounts: async (r) => agent.listAccounts(r),
+    syncCatalogs: async (r) => agent.syncCatalogs(r),
+    syncAudiences: async (r) => agent.syncAudiences(r),
+    syncEventSources: async (r) => agent.syncEventSources(r),
+    logEvent: async (r) => agent.logEvent(r),
   };
 }
 

@@ -61,6 +61,7 @@ async function runDemo(): Promise<void> {
     signals: "📡",
     creative: "🎨",
     govern: "⚖️ ",
+    sync_accounts: "🤝",
     sync_creatives: "🖼 ",
     create_media_buy: "🚀",
   };
@@ -118,9 +119,14 @@ async function runDemo(): Promise<void> {
   const finalReports = await suite.orchestrator.collectDelivery(result);
   printDelivery(finalReports);
 
-  // Close the optimization loop.
+  // Record downstream conversions for attribution, then close the loop.
+  const conversions = await suite.orchestrator.recordConversions(result, [
+    { event_id: "evt_1", event_type: "purchase", event_time: "2026-06-20T10:30:00.000Z", custom_data: { value: 149.99, currency: "USD" } },
+    { event_id: "evt_2", event_type: "lead", event_time: "2026-06-21T14:00:00.000Z" },
+  ]);
   await suite.orchestrator.sendFeedback(result, 1.28);
   log("");
+  log(`  ${green("✓")} ${conversions} conversion event(s) logged for attribution`);
   log(`  ${green("✓")} performance feedback submitted (index 1.28)`);
 
   log("");

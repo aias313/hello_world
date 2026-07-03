@@ -202,6 +202,14 @@ export class Orchestrator {
     for (const [sellerName, group] of bySeller) {
       const seller = group[0].seller;
 
+      // Establish the commercial relationship before spending.
+      const { accounts } = await seller.sales.syncAccounts({
+        accounts: [
+          { brand: brief.account.brand, operator: brief.account.operator, billing: brief.account.billing },
+        ],
+      });
+      emit("sync_accounts", `${sellerName}: account ${accounts[0].account_id} ${accounts[0].status}`);
+
       // Sync the built creatives into the seller's library (re-reviewed there).
       const syncPayload = {
         account: brief.account,
@@ -270,6 +278,33 @@ export class Orchestrator {
       reports.push(await conn.sales.getMediaBuyDelivery({ media_buy_id: media_buy.media_buy_id }));
     }
     return reports;
+  }
+
+  /**
+   * Record downstream conversions for attribution: configure an event source on
+   * each seller and log the marketing events against it. Returns total accepted.
+   */
+  async recordConversions(
+    result: CampaignResult,
+    events: Array<{
+      event_id: string;
+      event_type: "purchase" | "lead" | "sign_up" | "add_to_cart" | "page_view" | "custom";
+      event_time: string;
+      action_source?: "website" | "app" | "physical_store" | "offline";
+      custom_data?: Record<string, unknown>;
+    }>,
+  ): Promise<number> {
+    let accepted = 0;
+    const sourceId = `${result.name}_pixel`;
+    for (const { seller } of result.media_buys) {
+      const conn = this.opts.sellers.find((s) => s.name === seller)!;
+      await conn.sales.syncEventSources({
+        event_sources: [{ event_source_id: sourceId, type: "pixel", name: `${result.name} website pixel` }],
+      });
+      const res = await conn.sales.logEvent({ event_source_id: sourceId, events });
+      accepted += res.accepted;
+    }
+    return accepted;
   }
 
   /** Submit performance feedback for each media buy (closes the optimization loop). */

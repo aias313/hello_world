@@ -5,12 +5,34 @@
  * implementation could swap in a database without touching agent logic.
  */
 import type {
+  AccountRecord,
+  CatalogInput,
+  AudienceInput,
   Creative,
   CreativeFormat,
+  MarketingEvent,
   MediaBuy,
   Product,
   Signal,
 } from "./schemas.js";
+
+export interface EventSourceRecord {
+  event_source_id: string;
+  type: string;
+  name?: string;
+  created_at: string;
+}
+
+export interface CatalogRecord extends CatalogInput {
+  status: "synced" | "processing";
+  synced_at: string;
+}
+
+export interface AudienceRecord extends AudienceInput {
+  match_rate: number;
+  status: "matching" | "ready";
+  synced_at: string;
+}
 
 export class Store {
   readonly products = new Map<string, Product>();
@@ -18,6 +40,11 @@ export class Store {
   readonly creatives = new Map<string, Creative>();
   readonly mediaBuys = new Map<string, MediaBuy>();
   readonly signals = new Map<string, Signal>();
+  readonly accounts = new Map<string, AccountRecord>();
+  readonly catalogs = new Map<string, CatalogRecord>();
+  readonly audiences = new Map<string, AudienceRecord>();
+  readonly eventSources = new Map<string, EventSourceRecord>();
+  readonly events: MarketingEvent[] = [];
   /** idempotency_key -> media_buy_id, for safe create retries. */
   readonly idempotency = new Map<string, string>();
 

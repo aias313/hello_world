@@ -24,6 +24,12 @@ import {
   GetProductsRequest,
   SyncCreativesRequest,
   UpdateMediaBuyRequest,
+  SyncAccountsRequest,
+  SyncCatalogsRequest,
+  SyncAudiencesRequest,
+  SyncEventSourcesRequest,
+  LogEventRequest,
+  type AccountRecord,
   type Creative,
   type CreativeFormat,
   type MediaBuy,
@@ -32,6 +38,7 @@ import {
   type PricingOption,
   type Product,
 } from "../core/schemas.js";
+import type { CatalogRecord, AudienceRecord, EventSourceRecord } from "../core/store.js";
 
 export interface SalesAgentOptions {
   agentUrl?: string;
@@ -324,6 +331,108 @@ export class SalesAgent {
   }
 
   /* -------------------------------------------------------------- */
+  /* Commerce: accounts                                             */
+  /* -------------------------------------------------------------- */
+
+  /** sync_accounts — declare brand/operator pairs; seller provisions accounts. */
+  syncAccounts(input: unknown): { accounts: AccountRecord[] } {
+    const req = parseOrThrow(SyncAccountsRequest, input, "sync_accounts request");
+    const out: AccountRecord[] = [];
+    for (const a of req.accounts) {
+      const accountId = accountKey(a.brand.domain, a.operator);
+      const existing = this.store.accounts.get(accountId);
+      const record: AccountRecord = {
+        account_id: accountId,
+        brand: a.brand,
+        operator: a.operator,
+        billing: a.billing,
+        status: "active",
+        created_at: existing?.created_at ?? this.rt.clock.isoNow(),
+      };
+      this.store.accounts.set(accountId, record);
+      out.push(record);
+    }
+    return { accounts: out };
+  }
+
+  /** list_accounts — active commercial relationships. */
+  listAccounts(input?: { status?: string }): { accounts: AccountRecord[] } {
+    let accounts = [...this.store.accounts.values()];
+    if (input?.status) accounts = accounts.filter((a) => a.status === input.status);
+    return { accounts };
+  }
+
+  /* -------------------------------------------------------------- */
+  /* Catalogs                                                       */
+  /* -------------------------------------------------------------- */
+
+  /** sync_catalogs — push product/store/inventory feeds to the account. */
+  syncCatalogs(input: unknown): { catalogs: CatalogRecord[] } {
+    const req = parseOrThrow(SyncCatalogsRequest, input, "sync_catalogs request");
+    const out: CatalogRecord[] = [];
+    for (const c of req.catalogs) {
+      const record: CatalogRecord = { ...c, status: "synced", synced_at: this.rt.clock.isoNow() };
+      this.store.catalogs.set(c.catalog_id, record);
+      out.push(record);
+    }
+    return { catalogs: out };
+  }
+
+  /* -------------------------------------------------------------- */
+  /* Audiences                                                      */
+  /* -------------------------------------------------------------- */
+
+  /** sync_audiences — upload first-party CRM audiences and get match status. */
+  syncAudiences(input: unknown): { audiences: AudienceRecord[] } {
+    const req = parseOrThrow(SyncAudiencesRequest, input, "sync_audiences request");
+    const out: AudienceRecord[] = [];
+    for (const a of req.audiences) {
+      // Deterministic match rate derived from the audience id (no randomness).
+      const matchRate = 0.55 + (hashStr(a.audience_id) % 40) / 100; // 0.55–0.95
+      const record: AudienceRecord = {
+        ...a,
+        match_rate: round2(matchRate),
+        status: "ready",
+        synced_at: this.rt.clock.isoNow(),
+      };
+      this.store.audiences.set(a.audience_id, record);
+      out.push(record);
+    }
+    return { audiences: out };
+  }
+
+  /* -------------------------------------------------------------- */
+  /* Conversion tracking                                            */
+  /* -------------------------------------------------------------- */
+
+  /** sync_event_sources — configure conversion event sources on the account. */
+  syncEventSources(input: unknown): { event_sources: EventSourceRecord[] } {
+    const req = parseOrThrow(SyncEventSourcesRequest, input, "sync_event_sources request");
+    const out: EventSourceRecord[] = [];
+    for (const s of req.event_sources) {
+      const record: EventSourceRecord = {
+        event_source_id: s.event_source_id,
+        type: s.type,
+        name: s.name,
+        created_at: this.rt.clock.isoNow(),
+      };
+      this.store.eventSources.set(s.event_source_id, record);
+      out.push(record);
+    }
+    return { event_sources: out };
+  }
+
+  /** log_event — ingest marketing events for attribution. */
+  logEvent(input: unknown): { accepted: number; total_events: number } {
+    const req = parseOrThrow(LogEventRequest, input, "log_event request");
+    if (!this.store.eventSources.has(req.event_source_id)) {
+      throw AdcpError.notFound(`Event source ${req.event_source_id}`);
+    }
+    for (const e of req.events) this.store.events.push(e);
+    return { accepted: req.events.length, total_events: this.store.events.length };
+  }
+
+  /* -------------------------------------------------------------- */
   /* Delivery engine                                                */
   /* -------------------------------------------------------------- */
 
@@ -442,4 +551,7 @@ function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 1_000_000;
   return h;
+}
+function accountKey(brandDomain: string, operator: string): string {
+  return `acct_${operator}__${brandDomain}`.replace(/[^a-z0-9_]/gi, "_");
 }

@@ -37,6 +37,12 @@ export function httpSales(baseUrl: string): SalesClient {
     getMediaBuys: (r) => call(baseUrl, "get_media_buys", r ?? {}),
     getMediaBuyDelivery: (r) => call<DeliveryReport>(baseUrl, "get_media_buy_delivery", r),
     providePerformanceFeedback: (r) => call(baseUrl, "provide_performance_feedback", r),
+    syncAccounts: (r) => call(baseUrl, "sync_accounts", r),
+    listAccounts: (r) => call(baseUrl, "list_accounts", r ?? {}),
+    syncCatalogs: (r) => call(baseUrl, "sync_catalogs", r),
+    syncAudiences: (r) => call(baseUrl, "sync_audiences", r),
+    syncEventSources: (r) => call(baseUrl, "sync_event_sources", r),
+    logEvent: (r) => call(baseUrl, "log_event", r),
   };
 }
 

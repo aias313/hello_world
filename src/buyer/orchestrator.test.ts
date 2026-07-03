@@ -58,6 +58,24 @@ describe("Orchestrator full lifecycle", () => {
     await expect(suite.orchestrator.sendFeedback(result, 1.3)).resolves.toBeUndefined();
   });
 
+  it("establishes an account and records conversions end-to-end", async () => {
+    const suite = createSuite({ deterministic: true, startTime: "2026-03-15T00:00:00.000Z" });
+    const result = await suite.orchestrator.runCampaign(brief);
+    expect(result.status).toBe("executed");
+
+    // account was provisioned on the seller during the buy
+    expect(suite.sales.listAccounts().accounts).toHaveLength(1);
+    expect(suite.sales.listAccounts().accounts[0].status).toBe("active");
+
+    // conversions flow through event source + log_event
+    const accepted = await suite.orchestrator.recordConversions(result, [
+      { event_id: "c1", event_type: "purchase", event_time: "2026-06-20T00:00:00.000Z", custom_data: { value: 99 } },
+      { event_id: "c2", event_type: "lead", event_time: "2026-06-21T00:00:00.000Z" },
+    ]);
+    expect(accepted).toBe(2);
+    expect(suite.sales.store.events).toHaveLength(2);
+  });
+
   it("stops when governance denies (brand-safety)", async () => {
     const suite = createSuite({
       deterministic: true,
