@@ -19,9 +19,40 @@ tasks over pluggable transports (in-process, HTTP/A2A, or MCP).
 
 ```bash
 npm install
-npm run demo          # run the full buy/sell/creative lifecycle end-to-end
-npm test              # 47 tests across every agent + transport
+npm run serve         # open http://127.0.0.1:8787 — the web dashboard (no CLI needed)
+npm run demo          # or: run the full lifecycle end-to-end in the terminal
+npm test              # 63 tests across every agent + transport + API
 ```
+
+## Web dashboard (for non-technical users)
+
+`npm run serve` starts **AdCP Campaign Studio** — a browser UI that drives the
+whole suite with no code, no CLI, and no JSON:
+
+- **Dashboard** — live stat tiles (spend, impressions, clicks), every campaign
+  with its status, pacing meter, and flight dates; auto-refreshes.
+- **New campaign** — a plain-English form: describe what you want to advertise,
+  set a budget and dates, preview matching inventory, and launch. The page then
+  shows exactly what the agents did, step by step (searched inventory, chose
+  products, activated audience data, generated creatives, governance review,
+  placed the buy).
+- **Campaign detail** — delivery charts by package (impressions & spend),
+  pause/resume buttons, one-click test conversions, performance feedback, and
+  the full governance approval trail in plain language.
+- **Inventory / Creatives / Audiences** — browse what the seller offers, the
+  ads the creative agent built, and available targeting segments.
+- **Create sample campaign** — one click seeds a mid-flight campaign so the
+  dashboard shows live numbers immediately.
+
+Budgets of $20,000+ automatically route through the governance approval step,
+and the UI explains the outcome ("The budget needed a human sign-off — approved
+with conditions: …"). Light and dark themes follow your system setting.
+
+The same port still serves everything technical: the campaign REST API under
+`/api/*`, the raw AdCP task transport (`/tasks/:name`, `/rpc`), capability
+discovery, and the `.well-known` documents.
+
+## Terminal demo
 
 `npm run demo` runs a deterministic, reproducible campaign: it discovers
 StreamHaus inventory from a natural-language brief, activates an outdoor-audience
@@ -93,7 +124,7 @@ complete campaign by chaining them.
 
 ```bash
 adcp demo                       # full orchestration lifecycle (deterministic)
-adcp serve --port 8787          # start the HTTP agent
+adcp serve --port 8787          # start the web dashboard + HTTP agent
 adcp discover --brief "..."     # product discovery from a brief
 adcp capabilities               # agent node capabilities
 ```
@@ -116,7 +147,11 @@ src/
     orchestrator.ts    the buyer-side campaign coordinator
   transport/
     registry.ts        task-name → handler registry shared by all transports
-  http/                Express server (REST/JSON-RPC/well-known) + HTTP clients
+  http/
+    server.ts          agent transport (REST/JSON-RPC/well-known) + CORS
+    client.ts          HTTP clients implementing the buyer interfaces
+    suite-server.ts    campaign REST API + serves the web dashboard
+    ui.ts              AdCP Campaign Studio (self-contained HTML dashboard)
   mcp/                 MCP stdio server
   suite.ts             factory wiring a full suite together
   cli/                 command-line entrypoint
@@ -142,7 +177,7 @@ src/
 ## Testing
 
 ```bash
-npm test          # vitest, 54 tests
+npm test          # vitest, 63 tests
 npm run typecheck # tsc --noEmit
 ```
 

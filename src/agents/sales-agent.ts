@@ -45,20 +45,16 @@ export interface SalesAgentOptions {
   runtime?: Runtime;
   products?: Product[];
   formats?: CreativeFormat[];
-  /** Budget above which a media buy is held for manual approval (pending_start). */
-  autoApproveUnder?: number;
 }
 
 export class SalesAgent {
   readonly agentUrl: string;
   readonly store = new Store();
   private readonly rt: Runtime;
-  private readonly autoApproveUnder: number;
 
   constructor(opts: SalesAgentOptions = {}) {
     this.agentUrl = opts.agentUrl ?? DEFAULT_AGENT_URL;
     this.rt = opts.runtime ?? systemRuntime();
-    this.autoApproveUnder = opts.autoApproveUnder ?? Infinity;
     this.store.seedProducts(opts.products ?? SEED_PRODUCTS);
     this.store.seedFormats(opts.formats ?? SEED_FORMATS);
   }
@@ -175,7 +171,6 @@ export class SalesAgent {
     const packages: Package[] = req.packages.map((pkg) => this.buildPackage(pkg));
     const totalBudget = round2(packages.reduce((s, p) => s + p.budget, 0));
     const currency = packages[0]?.currency ?? "USD";
-    const status = totalBudget < this.autoApproveUnder ? "pending_start" : "pending_start";
 
     const now = this.rt.clock.isoNow();
     const mediaBuy: MediaBuy = {
@@ -183,7 +178,7 @@ export class SalesAgent {
       buyer_ref: req.buyer_ref,
       account: req.account,
       brand: req.brand,
-      status,
+      status: "pending_start",
       start_time: req.start_time,
       end_time: req.end_time,
       total_budget: totalBudget,
@@ -203,12 +198,13 @@ export class SalesAgent {
     const product = this.store.products.get(pkg.product_id);
     if (!product) throw AdcpError.notFound(`Product ${pkg.product_id}`);
 
-    const opt: PricingOption =
-      (pkg.pricing_option_id
-        ? product.pricing_options.find((o) => o.pricing_option_id === pkg.pricing_option_id)
-        : product.pricing_options[0]) ?? product.pricing_options[0];
-    if (pkg.pricing_option_id && !product.pricing_options.some((o) => o.pricing_option_id === pkg.pricing_option_id)) {
-      throw AdcpError.invalid(`Unknown pricing_option_id ${pkg.pricing_option_id} for ${product.product_id}`);
+    let opt: PricingOption = product.pricing_options[0];
+    if (pkg.pricing_option_id) {
+      const found = product.pricing_options.find((o) => o.pricing_option_id === pkg.pricing_option_id);
+      if (!found) {
+        throw AdcpError.invalid(`Unknown pricing_option_id ${pkg.pricing_option_id} for ${product.product_id}`);
+      }
+      opt = found;
     }
     if (opt.min_spend && pkg.budget < opt.min_spend) {
       throw AdcpError.invalid(

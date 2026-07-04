@@ -28,6 +28,18 @@ export function createHttpApp(opts: HttpServerOptions): Express {
   const app = express();
   app.use(express.json({ limit: "5mb" }));
 
+  // Permissive CORS so browser-based buyer UIs can call the agent directly.
+  app.use((req, res, next) => {
+    res.setHeader("access-control-allow-origin", "*");
+    res.setHeader("access-control-allow-methods", "GET,POST,OPTIONS");
+    res.setHeader("access-control-allow-headers", "content-type");
+    if (req.method === "OPTIONS") {
+      res.sendStatus(204);
+      return;
+    }
+    next();
+  });
+
   const tasks = buildRegistry(node);
   const byName = new Map<string, TaskDef>(tasks.map((t) => [t.name, t]));
 

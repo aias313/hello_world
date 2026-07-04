@@ -12,10 +12,8 @@
  */
 import { createSuite } from "../suite.js";
 import { FixedClock } from "../core/index.js";
-import { startHttpServer } from "../http/server.js";
+import { startSuiteServer } from "../http/suite-server.js";
 import { SalesAgent } from "../agents/sales-agent.js";
-import { CreativeAgent } from "../agents/creative-agent.js";
-import { SignalsAgent } from "../agents/signals-agent.js";
 import type { CampaignBrief } from "../buyer/orchestrator.js";
 import type { DeliveryReport } from "../buyer/clients.js";
 
@@ -159,20 +157,14 @@ function printDelivery(reports: DeliveryReport[]): void {
 }
 
 async function runServe(port: number): Promise<void> {
-  const node = {
-    name: "suite",
-    sales: new SalesAgent(),
-    creative: new CreativeAgent(),
-    signals: new SignalsAgent(),
-  };
-  const server = await startHttpServer({ node, port });
-  log(green(`AdCP HTTP agent listening on ${server.url}`));
-  log(dim("  GET  /capabilities"));
-  log(dim("  GET  /tasks"));
-  log(dim("  POST /tasks/:name"));
-  log(dim("  POST /rpc"));
-  log(dim("  GET  /.well-known/adagents.json"));
-  log(dim("  GET  /.well-known/brand.json"));
+  const server = await startSuiteServer({ port });
+  log(green(`AdCP Campaign Studio running at ${server.url}`));
+  log("");
+  log(bold("  Open that URL in a browser") + dim(" — dashboard, campaign launcher, inventory, creatives, audiences."));
+  log("");
+  log(dim("  For agents & integrations on the same port:"));
+  log(dim("    GET  /capabilities · /tasks · /.well-known/adagents.json · /.well-known/brand.json"));
+  log(dim("    POST /tasks/:name · /rpc (JSON-RPC 2.0) · /api/* (campaign API)"));
   log(dim("\nPress Ctrl+C to stop."));
 }
 
